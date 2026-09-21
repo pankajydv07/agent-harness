@@ -1,52 +1,46 @@
 import json
 from llm import SYSTEM_PROMPT, call_llm
 from tools import TOOLS
+from ui import ui
 
 def main():
-    user_input = input("Enter your prompt > ")
-    if not user_input.strip():
-        return
+    ui.banner()
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-    # 1. Initialize message history
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": user_input},
-    ]
-
-    # 2. The Agent Loop
     while True:
-        # A. Call LLM with the full message history
-        message, usage = call_llm(messages)
-
-        # B. Append the assistant's response to history
-        # (exclude_none ensures we don't send null fields back to the API)
-        messages.append(message.model_dump(exclude_none=True))
-
-        # C. If model produced text, print it
-        if message.content:
-            print("\nAgent:", message.content, "\n")
-
-        # D. If no tool calls were requested, we are DONE!
-        if not message.tool_calls:
+        user_input = ui.ask()
+        # Clean exit check for empty input or explicit exit commands
+        if not user_input or user_input.lower() in ("exit", "quit", "/exit", "/quit", "q"):
             break
 
-        # E. Execute each tool call requested by the model
-        for tool_call in message.tool_calls:
-            func_name = tool_call.function.name
-            args = json.loads(tool_call.function.arguments)
-            
-            print(f"[Running Tool] {func_name}({args})")
-            result = TOOLS[func_name](**args)
-            print(f"[Result]:\n{result}\n")
+        messages.append({"role": "user", "content": user_input})
 
-            # F. CRITICAL: Feed the tool result back to the model!
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "content": str(result),
-            })
+        while True:
+            with ui.working():
+                message, usage = call_llm(messages)
 
-        print(f"[Usage]: {usage}")
+            messages.append(message.model_dump(exclude_none=True))
+
+            if message.content:
+                ui.agent(message.content)
+
+            ui.usage(usage)
+
+            if not message.tool_calls:
+                break
+
+            for tool_call in message.tool_calls:
+                args = json.loads(tool_call.function.arguments)
+                result = TOOLS[tool_call.function.name](**args)
+                ui.tool(tool_call.function.name, args, result)
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": str(result),
+                })
+
+    ui.summary()
 
 if __name__ == "__main__":
     main()
