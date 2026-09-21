@@ -1,4 +1,5 @@
 import subprocess
+from skills import read_skill
 
 def bash(command: str) -> str:
     try:
@@ -53,9 +54,27 @@ TOOL_SCHEMAS = [
             },
         },
     },
+        {
+        "type": "function",
+        "function": {
+            "name": "read_skill",
+            "description": "Read a skill and return its full instructions.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the skill to read",
+                    }
+                },
+                "required": ["name"],
+            },
+        },
+    },
 ]
 
 TOOLS = {
     "bash": bash,
     "read_file": read_file,
+    "read_skill": read_skill,
 }

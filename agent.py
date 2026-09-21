@@ -3,6 +3,7 @@ from llm import SYSTEM_PROMPT, call_llm
 from tools import TOOLS
 from ui import ui
 
+
 def main():
     ui.banner()
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]

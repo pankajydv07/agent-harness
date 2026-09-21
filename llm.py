@@ -3,6 +3,7 @@ import sys
 from dotenv import load_dotenv
 from openai import OpenAI
 from tools import TOOL_SCHEMAS
+from skills import skills_prompt
 
 load_dotenv()
 
@@ -19,10 +20,15 @@ SYSTEM_PROMPT = f"""
 You are a coding agent. Your job is to code. Always code.
 Use the bash tool to inspect files or run commands.
 Use read_file to read file contents.
+Use read_skill to load instructions for a specific skill.
 Answer back to the user once your work is done.
 
 Your current working directory is: {os.getcwd()}
+
+Available skills:
+{skills_prompt() or "(no skills available)"}
 """
+
 
 def extract_usage(response) -> dict:
     usage = response.usage
