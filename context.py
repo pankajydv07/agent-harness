@@ -7,49 +7,65 @@ import subprocess
 from datetime import datetime
 
 SEEN = {}  # path -> mtime when the agent last read it
+LABELS = {"M": "modified", "D": "deleted", "A": "added", "??": "new"}
 
 def note_read(path: str):
+    """Record timestamp when file is read."""
     try:
-        SEEN[path] = os.path.getmtime(path)
+        if os.path.exists(path):
+            SEEN[path] = os.path.getmtime(path)
+        else:
+            SEEN.pop(path, None)
     except OSError:
         pass
 
-def stale_files() -> list[str]:
-    stale = []
-    for path, mtime in list(SEEN.items()):
-        try:
-            if os.path.getmtime(path) != mtime:
-                stale.append(path)
-        except OSError:
-            pass
-    return stale
+def git(command: str) -> str:
+    result = subprocess.run(
+        f"git {command}", shell=True, capture_output=True, text=True
+    )
+    return result.stdout.strip()
 
-def stale_note() -> str:
-    """Warn about files that changed on disk since the agent read them."""
-    changed = stale_files()
+def git_status() -> dict:
+    """path -> status code from git status --porcelain."""
+    raw = git("status --porcelain")
+    status = {}
+    for line in raw.splitlines():
+        if len(line) >= 3:
+            code = line[:2].strip()
+            path = line[3:].strip()
+            status[path] = code
+    return status
+
+LAST_STATUS = git_status()
+
+def file_changes() -> dict:
+    """What git sees as changed since the previous turn."""
+    global LAST_STATUS
+    now = git_status()
+    changed = {p: c for p, c in now.items() if LAST_STATUS.get(p) != c}
+    LAST_STATUS = now
+    return changed
+
+def changes_note() -> str:
+    changed = file_changes()
     if not changed:
         return ""
+    lines = [f"{LABELS.get(code, code)}: {path}" for path, code in changed.items()]
     return (
         "\n<system-reminder>\n"
-        "These files changed on disk since you read them. Read them again "
-        "before editing:\n" + "\n".join(changed) + "\n</system-reminder>"
+        "These files changed since your last turn. Read them again before editing:\n"
+        + "\n".join(lines)
+        + "\n</system-reminder>"
     )
-
-def git_branch() -> str:
-    result = subprocess.run(
-        "git branch --show-current", shell=True, capture_output=True, text=True
-    )
-    return result.stdout.strip() or "(detached)"
 
 def reminder() -> dict:
-    """The block we append to the messages on every turn."""
+    branch = git("branch --show-current") or "(detached)"
     return {
         "role": "user",
         "content": (
             "<env>\n"
             f"time: {datetime.now():%Y-%m-%d %H:%M}\n"
-            f"git branch: {git_branch()}\n"
-            "</env>" + stale_note()
+            f"git branch: {branch}\n"
+            "</env>" + changes_note()
         ),
     }
-

@@ -1,9 +1,10 @@
-from context import reminder
 import json
+import commands
+import session
+from context import reminder
 from llm import SYSTEM_PROMPT, call_llm
 from tools import TOOLS
 from ui import ui
-
 
 def main():
     ui.banner()
@@ -11,16 +12,24 @@ def main():
 
     while True:
         user_input = ui.ask()
-        # Clean exit check for empty input or explicit exit commands
-        if not user_input or user_input.lower() in ("exit", "quit", "/exit", "/quit", "q"):
+        if not user_input or user_input.lower() in ("exit", "quit", "q"):
             break
+
+        # Intercept slash commands (/help, /rewind, /sessions, /clear)
+        if user_input.startswith("/"):
+            handled, messages = commands.handle(user_input, messages)
+            if handled:
+                continue
 
         messages.append({"role": "user", "content": user_input})
 
         while True:
-            with ui.working():
-                message, usage = call_llm(messages + [reminder()])
-
+            try:
+                with ui.working():
+                    message, usage = call_llm(messages + [reminder()])
+            except Exception as e:
+                ui.agent(f"API Error: {e}")
+                break
 
             messages.append(message.model_dump(exclude_none=True))
 
@@ -34,14 +43,21 @@ def main():
 
             for tool_call in message.tool_calls:
                 args = json.loads(tool_call.function.arguments)
-                result = TOOLS[tool_call.function.name](**args)
-                ui.tool(tool_call.function.name, args, result)
+                func_name = tool_call.function.name
+                if func_name in TOOLS:
+                    result = TOOLS[func_name](**args)
+                else:
+                    result = f"Error: Tool '{func_name}' is not registered."
+                ui.tool(func_name, args, result)
 
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
                     "content": str(result),
                 })
+
+        # Persist new turns to session log on disk
+        session.save(messages)
 
     ui.summary()
 

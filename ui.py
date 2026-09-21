@@ -22,7 +22,7 @@ class UI:
     def banner(self):
         self.console.print()
         self.console.print(Rule(Text(" coding agent ", style=f"bold {ACCENT}"), style=MUTED))
-        self.console.print(Padding(Text("type 'exit' or press ctrl-d to quit", style=MUTED), (0, 0, 0, 2)))
+        self.console.print(Padding(Text("type 'exit', '/help' or press ctrl-d to quit", style=MUTED), (0, 0, 0, 2)))
 
     def ask(self) -> str:
         self.console.print()
@@ -61,6 +61,26 @@ class UI:
                 (1, 2, 0, 2),
             )
         )
+
+    def resumed(self, messages: list):
+        turns = sum(1 for m in messages if m.get("role") == "user")
+        self.console.print(
+            Padding(Text(f"resumed · {len(messages)} messages · {turns} turns", style=MUTED), (1, 0, 0, 2))
+        )
+
+    def note(self, text: str):
+        self.console.print(Padding(Text(text, style=MUTED), (1, 0, 0, 2)))
+
+    def pick(self, title: str, rows: list) -> int | None:
+        """Displays a numbered list; returns the chosen integer index or None."""
+        self.console.print(Padding(Text(title, style=f"bold {ACCENT}"), (1, 0, 0, 2)))
+        for i, row in enumerate(rows):
+            self.console.print(Padding(Text(f"{i:>3}  {row}", style=MUTED), (0, 0, 0, 2)))
+        try:
+            ans = self.console.input(f"\n  [bold {USER}]number>[/] ").strip()
+            return int(ans) if ans.isdigit() and int(ans) < len(rows) else None
+        except (EOFError, KeyboardInterrupt):
+            return None
 
     @contextmanager
     def working(self):
