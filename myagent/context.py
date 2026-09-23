@@ -5,6 +5,7 @@ It goes at the END of the message list so the stable prefix in front of it stays
 import os
 import subprocess
 from datetime import datetime
+from .todos import todos_prompt
 
 SEEN = {}  # path -> mtime when the agent last read it
 LABELS = {"M": "modified", "D": "deleted", "A": "added", "??": "new"}
@@ -66,6 +67,10 @@ def reminder() -> dict:
             "<env>\n"
             f"time: {datetime.now():%Y-%m-%d %H:%M}\n"
             f"git branch: {branch}\n"
-            "</env>" + changes_note()
+            "</env>" + todos_note() + changes_note()
         ),
     }
+
+def todos_note() -> str:
+    plan = todos_prompt()
+    return f"\n<todos>\n{plan}\n</todos>" if plan else ""

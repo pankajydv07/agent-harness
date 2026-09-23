@@ -32,6 +32,15 @@ class UI:
             self.console.print()
             return ""
 
+    def confirm(self, prompt: str) -> bool:
+        self.console.print(Padding(Text(f"allow? {prompt}", style=f"bold {TOOL}"), (1, 0, 0, 2)))
+        try:
+            ans = self.console.input(f"  [bold {USER}][y/N]>[/] ").strip().lower()
+            return ans in ("y", "yes")
+        except (EOFError, KeyboardInterrupt):
+            return False
+
+
     def user(self, text: str):
         self.console.print(Padding(Text(text.strip(), style=f"bold {USER}"), (1, 0, 0, 2)))
 
@@ -83,8 +92,8 @@ class UI:
             return None
 
     @contextmanager
-    def working(self):
-        with self.console.status(Text("thinking", style=MUTED), spinner="dots", spinner_style=ACCENT):
+    def working(self, label="thinking"):
+        with self.console.status(Text(label, style=MUTED), spinner="dots", spinner_style=ACCENT):
             yield
 
     def usage(self, stats: dict):

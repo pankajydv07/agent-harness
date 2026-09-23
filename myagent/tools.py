@@ -1,4 +1,5 @@
 import subprocess
+from .todos import write_todos, TODO_SCHEMA
 from .skills import read_skill
 from .context import note_read
 def bash(command: str) -> str:
@@ -144,6 +145,7 @@ TOOL_SCHEMAS = [
             },
         },
     },
+    TODO_SCHEMA,
 
 ]
 
@@ -153,5 +155,6 @@ TOOLS = {
     "write_file": write_file,
     "str_replace": str_replace,
     "read_skill": read_skill,
+    "write_todos":write_todos,
 }
 

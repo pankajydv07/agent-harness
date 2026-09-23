@@ -24,13 +24,18 @@ Use read_file to read file contents.
 Use write_file to create new files.
 Use str_replace to make targeted edits to existing files.
 Use read_skill to load instructions for a specific skill.
-Answer back to the user once your work is done.
+
+For any task that takes more than one step, call write_todos first and plan it
+out. Send the whole list every time you call it - it replaces the old one.
+Keep exactly one task in_progress, mark it done the moment it is finished, and
+move the next one to in_progress in the same call. Skip the tool for simple single-step queries.
 
 Your current working directory is: {os.getcwd()}
 
 Available skills:
 {skills_prompt() or "(no skills available)"}
 """
+
 
 
 

@@ -5,6 +5,8 @@ from .context import reminder
 from .llm import SYSTEM_PROMPT, call_llm
 from .tools import TOOLS
 from .ui import ui
+from .todos import active_form
+from . import permissions
 
 def main():
     ui.banner()
@@ -25,7 +27,7 @@ def main():
 
         while True:
             try:
-                with ui.working():
+                with ui.working(active_form()):
                     message, usage = call_llm(messages + [reminder()])
             except Exception as e:
                 ui.agent(f"API Error: {e}")
@@ -44,10 +46,20 @@ def main():
             for tool_call in message.tool_calls:
                 args = json.loads(tool_call.function.arguments)
                 func_name = tool_call.function.name
-                if func_name in TOOLS:
+
+                action, reason = permissions.check(func_name, args)
+
+                if action == "deny":
+                    result = f"Error: Action '{reason}' is blocked by security policy."
+                    ui.note(f"Blocked: {reason}")
+                elif action == "ask" and not ui.confirm(reason or func_name):
+                    result = f"Error: User denied permission to {reason}."
+                    ui.note(f"Denied by user: {reason}")
+                elif func_name in TOOLS:
                     result = TOOLS[func_name](**args)
                 else:
                     result = f"Error: Tool '{func_name}' is not registered."
+
                 ui.tool(func_name, args, result)
 
                 messages.append({
