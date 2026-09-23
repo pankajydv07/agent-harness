@@ -2,15 +2,16 @@ import subprocess
 from .todos import write_todos, TODO_SCHEMA
 from .skills import read_skill
 from .context import note_read
+from . import sandbox
+
 def bash(command: str) -> str:
     try:
-        result = subprocess.run(
-            command, shell=True, capture_output=True, text=True, timeout=60
-        )
+        result = sandbox.run(command, timeout=60)
         output = (result.stdout or "") + (result.stderr or "")
         return output.strip() or "(no output)"
     except subprocess.TimeoutExpired:
         return "(no output: command timed out)"
+
 
 def read_file(path: str) -> str:
     """Read a file and return its contents."""

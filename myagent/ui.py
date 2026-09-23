@@ -8,7 +8,8 @@ from rich.panel import Panel
 from rich.rule import Rule
 from rich.table import Table
 from rich.text import Text
-
+from . import sandbox
+from . import prompt
 ACCENT = "#7aa2f7"
 USER = "#9ece6a"
 TOOL = "#e0af68"
@@ -31,16 +32,17 @@ class UI:
 
     def banner(self):
         self.console.print()
-        self.console.print(Rule(Text(" coding agent ", style=f"bold {ACCENT}"), style=MUTED))
+        self.console.print(Rule(Text(f" coding agent · sandbox: {sandbox.name()} ", style=f"bold {ACCENT}"), style=MUTED))
         self.console.print(Padding(Text("type 'exit', '/help' or press ctrl-d to quit", style=MUTED), (0, 0, 0, 2)))
 
     def ask(self) -> str:
         self.console.print()
         try:
-            return self.console.input(f"[bold {USER}]>[/] ").strip()
+            return prompt.read("> ").strip()
         except (EOFError, KeyboardInterrupt):
             self.console.print()
             return ""
+
 
     def confirm(self, prompt: str) -> bool:
         """Interactive arrow-key confirmation menu (Use Up/Down + Enter)."""
