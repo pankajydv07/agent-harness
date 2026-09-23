@@ -1,4 +1,5 @@
 from . import session
+from . import compact
 from .ui import ui
 
 COMMANDS = {
@@ -6,6 +7,7 @@ COMMANDS = {
     "/rewind": "Step back to an earlier point in this conversation",
     "/sessions": "List and reopen past conversation sessions",
     "/clear": "Start a fresh conversation history",
+    "/compact": "Summarize earlier context to free up tokens",
 }
 
 def rewind(messages: list) -> list:
@@ -37,6 +39,15 @@ def sessions(messages: list) -> list:
     ui.resumed(loaded)
     return loaded
 
+def handle_compact(messages: list) -> list:
+    if len(messages) <= 4:
+        ui.note("Transcript is too short to compact.")
+        return messages
+    with ui.working("compacting context"):
+        new_messages = compact.compact(messages)
+    ui.note(f"Compacted {len(messages)} messages down to {len(new_messages)} messages.")
+    return new_messages
+
 def handle(command: str, messages: list) -> tuple[bool, list]:
     """Returns (was_handled, updated_messages)"""
     cmd = command.strip().split()[0].lower()
@@ -47,6 +58,8 @@ def handle(command: str, messages: list) -> tuple[bool, list]:
     if cmd == "/clear":
         ui.note("Started fresh conversation.")
         return True, [m for m in messages if m.get("role") == "system"]
+    if cmd == "/compact":
+        return True, handle_compact(messages)
     if cmd == "/help":
         ui.note("\n".join(f"{name:<12} - {help_text}" for name, help_text in COMMANDS.items()))
         return True, messages

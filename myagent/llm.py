@@ -24,6 +24,7 @@ Use read_file to read file contents.
 Use write_file to create new files.
 Use str_replace to make targeted edits to existing files.
 Use read_skill to load instructions for a specific skill.
+Use task to spawn an exploration subagent with an isolated context window for deep investigations.
 
 For any task that takes more than one step, call write_todos first and plan it
 out. Send the whole list every time you call it - it replaces the old one.
@@ -53,11 +54,11 @@ def extract_usage(response) -> dict:
         "cached_tokens": getattr(prompt_details, "cached_tokens", None) if prompt_details else None,
     }
 
-def call_llm(messages):
+def call_llm(messages, tools=None):
     response = client.chat.completions.create(
         model=MODEL,
         messages=messages,
-        tools=TOOL_SCHEMAS,
+        tools=tools if tools is not None else TOOL_SCHEMAS,
     )
     message = response.choices[0].message
     usage = extract_usage(response)

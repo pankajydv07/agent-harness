@@ -18,3 +18,8 @@ if GLOBAL_ENV.exists():
 BASE_URL = os.getenv("BASE_URL", "https://openrouter.ai/api/v1")
 API_KEY = os.getenv("API_KEY", "")
 MODEL = os.getenv("MODEL", "deepseek/deepseek-chat")
+
+# Context window & compaction thresholds
+CONTEXT_WINDOW = int(os.getenv("CONTEXT_WINDOW", "32000"))
+COMPACT_AT = float(os.getenv("COMPACT_AT", "0.75"))
+COMPACT_TO = float(os.getenv("COMPACT_TO", "0.25"))

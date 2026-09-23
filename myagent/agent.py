@@ -3,10 +3,11 @@ from . import commands
 from . import session
 from .context import reminder
 from .llm import SYSTEM_PROMPT, call_llm
-from .tools import TOOLS
+from .tools import execute
 from .ui import ui
 from .todos import active_form
-from . import permissions
+from . import history
+from . import compact
 
 def main():
     ui.banner()
@@ -17,18 +18,20 @@ def main():
         if not user_input or user_input.lower() in ("exit", "quit", "q"):
             break
 
-        # Intercept slash commands (/help, /rewind, /sessions, /clear)
+        # Intercept slash commands (/help, /rewind, /sessions, /clear, /compact)
         if user_input.startswith("/"):
             handled, messages = commands.handle(user_input, messages)
             if handled:
                 continue
 
         messages.append({"role": "user", "content": user_input})
+        last_usage = {}
 
         while True:
             try:
                 with ui.working(active_form()):
                     message, usage = call_llm(messages + [reminder()])
+                    last_usage = usage
             except Exception as e:
                 ui.agent(f"API Error: {e}")
                 break
@@ -44,29 +47,24 @@ def main():
                 break
 
             for tool_call in message.tool_calls:
-                args = json.loads(tool_call.function.arguments)
-                func_name = tool_call.function.name
-
-                action, reason = permissions.check(func_name, args)
-
-                if action == "deny":
-                    result = f"Error: Action '{reason}' is blocked by security policy."
-                    ui.note(f"Blocked: {reason}")
-                elif action == "ask" and not ui.confirm(reason or func_name):
-                    result = f"Error: User denied permission to {reason}."
-                    ui.note(f"Denied by user: {reason}")
-                elif func_name in TOOLS:
-                    result = TOOLS[func_name](**args)
-                else:
-                    result = f"Error: Tool '{func_name}' is not registered."
-
-                ui.tool(func_name, args, result)
+                args, result = execute(tool_call)
+                ui.tool(tool_call.function.name, args, result)
 
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,
-                    "content": str(result),
+                    "content": result,
                 })
+
+        # End of turn maintenance: strip old tool outputs and sweep spilled files
+        history.strip(messages)
+        history.sweep()
+
+        # Check for automatic context compaction threshold
+        if compact.needed(last_usage):
+            ui.note("Context window nearing limit. Compacting history...")
+            messages = compact.compact(messages)
+            ui.note("Context compaction complete.")
 
         # Persist new turns to session log on disk
         session.save(messages)
@@ -75,3 +73,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
