@@ -2,8 +2,9 @@ import os
 import sys
 from dotenv import load_dotenv
 from openai import OpenAI
-from tools import TOOL_SCHEMAS
-from skills import skills_prompt
+from .config import BASE_URL, API_KEY, MODEL
+from .tools import TOOL_SCHEMAS
+from .skills import skills_prompt
 
 load_dotenv()
 

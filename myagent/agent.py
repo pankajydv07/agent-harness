@@ -1,10 +1,10 @@
 import json
-import commands
-import session
-from context import reminder
-from llm import SYSTEM_PROMPT, call_llm
-from tools import TOOLS
-from ui import ui
+from . import commands
+from . import session
+from .context import reminder
+from .llm import SYSTEM_PROMPT, call_llm
+from .tools import TOOLS
+from .ui import ui
 
 def main():
     ui.banner()

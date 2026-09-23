@@ -1,5 +1,5 @@
-import session
-from ui import ui
+from . import session
+from .ui import ui
 
 COMMANDS = {
     "/help": "Show available commands",

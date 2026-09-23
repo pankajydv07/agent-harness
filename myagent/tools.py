@@ -1,6 +1,6 @@
 import subprocess
-from skills import read_skill
-from context import note_read
+from .skills import read_skill
+from .context import note_read
 def bash(command: str) -> str:
     try:
         result = subprocess.run(
