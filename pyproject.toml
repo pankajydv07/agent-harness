@@ -9,6 +9,8 @@ dependencies = [
     "python-dotenv>=1.2.3",
     "pyyaml>=6.0.3",
     "rich>=15.0.0",
+    "questionary>=2.1.0",
+    "prompt-toolkit>=3.0.43",
 ]
 
 [project.scripts]

@@ -1,5 +1,6 @@
 import json
 from contextlib import contextmanager
+import questionary
 from rich.console import Console, Group
 from rich.markdown import Markdown
 from rich.padding import Padding
@@ -13,6 +14,15 @@ USER = "#9ece6a"
 TOOL = "#e0af68"
 MUTED = "#565f89"
 MAX_TOOL_OUTPUT_LINES = 12
+
+CUSTOM_STYLE = questionary.Style([
+    ("qmark", "fg:#e0af68 bold"),
+    ("question", "bold"),
+    ("answer", "fg:#9ece6a bold"),
+    ("pointer", "fg:#7aa2f7 bold"),
+    ("highlighted", "fg:#7aa2f7 bold"),
+    ("selected", "fg:#9ece6a"),
+])
 
 class UI:
     def __init__(self):
@@ -33,13 +43,39 @@ class UI:
             return ""
 
     def confirm(self, prompt: str) -> bool:
-        self.console.print(Padding(Text(f"allow? {prompt}", style=f"bold {TOOL}"), (1, 0, 0, 2)))
+        """Interactive arrow-key confirmation menu (Use Up/Down + Enter)."""
+        self.console.print(Padding(Text(f"Approval Required: {prompt}", style=f"bold {TOOL}"), (1, 0, 0, 2)))
         try:
-            ans = self.console.input(f"  [bold {USER}][y/N]>[/] ").strip().lower()
-            return ans in ("y", "yes")
+            choice = questionary.select(
+                "Authorize execution?",
+                choices=[
+                    "Yes, allow",
+                    "No, deny",
+                ],
+                style=CUSTOM_STYLE,
+                use_indicator=True,
+            ).ask()
+            return choice == "Yes, allow"
         except (EOFError, KeyboardInterrupt):
             return False
 
+    def pick(self, title: str, rows: list) -> int | None:
+        """Interactive arrow-key selection list for sessions and rewind."""
+        if not rows:
+            return None
+        self.console.print()
+        try:
+            choice = questionary.select(
+                title,
+                choices=rows,
+                style=CUSTOM_STYLE,
+                use_indicator=True,
+            ).ask()
+            if choice is None:
+                return None
+            return rows.index(choice)
+        except (EOFError, KeyboardInterrupt):
+            return None
 
     def user(self, text: str):
         self.console.print(Padding(Text(text.strip(), style=f"bold {USER}"), (1, 0, 0, 2)))
@@ -79,17 +115,6 @@ class UI:
 
     def note(self, text: str):
         self.console.print(Padding(Text(text, style=MUTED), (1, 0, 0, 2)))
-
-    def pick(self, title: str, rows: list) -> int | None:
-        """Displays a numbered list; returns the chosen integer index or None."""
-        self.console.print(Padding(Text(title, style=f"bold {ACCENT}"), (1, 0, 0, 2)))
-        for i, row in enumerate(rows):
-            self.console.print(Padding(Text(f"{i:>3}  {row}", style=MUTED), (0, 0, 0, 2)))
-        try:
-            ans = self.console.input(f"\n  [bold {USER}]number>[/] ").strip()
-            return int(ans) if ans.isdigit() and int(ans) < len(rows) else None
-        except (EOFError, KeyboardInterrupt):
-            return None
 
     @contextmanager
     def working(self, label="thinking"):
