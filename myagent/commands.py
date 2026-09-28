@@ -8,6 +8,7 @@ COMMANDS = {
     "/sessions": "List and reopen past conversation sessions",
     "/clear": "Start a fresh conversation history",
     "/compact": "Summarize earlier context to free up tokens",
+    "/mcp": "Show connected MCP servers and available tools",
 }
 
 def rewind(messages: list) -> list:
@@ -48,6 +49,31 @@ def handle_compact(messages: list) -> list:
     ui.note(f"Compacted {len(messages)} messages down to {len(new_messages)} messages.")
     return new_messages
 
+def handle_mcp(messages: list) -> list:
+    from .mcp import mcp_manager
+    status = mcp_manager.get_status()
+    cfg = status.get("config") or "(none)"
+    servers = status.get("servers", {})
+    tools = status.get("tools", [])
+
+    lines = [f"MCP Config: {cfg}"]
+    if not servers:
+        lines.append("No active MCP servers connected.")
+    else:
+        lines.append("Servers:")
+        for sname, sstatus in servers.items():
+            lines.append(f"  • {sname}: {sstatus}")
+
+    if tools:
+        lines.append(f"Tools ({len(tools)}):")
+        for t in tools:
+            lines.append(f"  • {t}")
+    else:
+        lines.append("Tools: (none)")
+
+    ui.note("\n".join(lines))
+    return messages
+
 def handle(command: str, messages: list) -> tuple[bool, list]:
     """Returns (was_handled, updated_messages)"""
     cmd = command.strip().split()[0].lower()
@@ -60,6 +86,8 @@ def handle(command: str, messages: list) -> tuple[bool, list]:
         return True, [m for m in messages if m.get("role") == "system"]
     if cmd == "/compact":
         return True, handle_compact(messages)
+    if cmd == "/mcp":
+        return True, handle_mcp(messages)
     if cmd == "/help":
         ui.note("\n".join(f"{name:<12} - {help_text}" for name, help_text in COMMANDS.items()))
         return True, messages

@@ -185,6 +185,11 @@ TOOLS = {
     "task": task,
 }
 
+from .mcp import mcp_manager
+_mcp_schemas, _mcp_tools = mcp_manager.start(existing_names=set(TOOLS.keys()))
+TOOL_SCHEMAS.extend(_mcp_schemas)
+TOOLS.update(_mcp_tools)
+
 def execute(tool_call) -> tuple[dict, str]:
     """Universal executor enforcing permissions, sandbox, and capping."""
     args = json.loads(tool_call.function.arguments)
