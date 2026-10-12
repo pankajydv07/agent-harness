@@ -2,19 +2,15 @@ import os
 import sys
 from dotenv import load_dotenv
 from openai import OpenAI
-from .config import BASE_URL, API_KEY, MODEL
+from . import config
 from .tools import TOOL_SCHEMAS
 from .skills import skills_prompt
 
 load_dotenv()
 
-BASE_URL = os.getenv("BASE_URL", "https://openrouter.ai/api/v1")
-API_KEY = os.getenv("API_KEY")
-MODEL = os.getenv("MODEL", "deepseek/deepseek-chat")
-
 client = OpenAI(
-    base_url=BASE_URL,
-    api_key=API_KEY or "dummy-key",
+    base_url=config.BASE_URL,
+    api_key=config.API_KEY or "dummy-key",
 )
 
 SYSTEM_PROMPT = f"""
@@ -56,7 +52,7 @@ def extract_usage(response) -> dict:
 
 def call_llm(messages, tools=None):
     response = client.chat.completions.create(
-        model=MODEL,
+        model=config.MODEL,
         messages=messages,
         tools=tools if tools is not None else TOOL_SCHEMAS,
     )

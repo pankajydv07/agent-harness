@@ -58,7 +58,7 @@ class UI:
                 use_indicator=True,
             ).ask()
             return choice == "Yes, allow"
-        except (EOFError, KeyboardInterrupt):
+        except Exception:
             return False
 
     def pick(self, title: str, rows: list) -> int | None:
@@ -76,8 +76,20 @@ class UI:
             if choice is None:
                 return None
             return rows.index(choice)
-        except (EOFError, KeyboardInterrupt):
+        except Exception:
             return None
+
+    def prompt_text(self, title: str, default: str = "") -> str:
+        """Interactive text input with default value."""
+        try:
+            val = questionary.text(
+                title,
+                default=default,
+                style=CUSTOM_STYLE,
+            ).ask()
+            return val.strip() if val is not None else ""
+        except Exception:
+            return ""
 
     def user(self, text: str):
         self.console.print(Padding(Text(text.strip(), style=f"bold {USER}"), (1, 0, 0, 2)))
